@@ -13,3 +13,27 @@
  ✓ Ready in 3.6s
  ○ Compiling / ...
  ✓ Compiled / in 9.3s (757 modules)
+ GET / 200 in 9926ms
+ ✓ Compiled in 2.1s (739 modules)
+ GET / 200 in 379ms
+ ✓ Compiled /_not-found in 468ms (729 modules)
+ GET /chat 404 in 731ms
+ GET / 200 in 113ms
+ ✓ Compiled in 1021ms (699 modules)
+ GET / 200 in 216ms
+ ✓ Compiled in 1033ms (699 modules)
+ GET / 200 in 144ms
+ GET / 200 in 161ms
+ ✓ Compiled in 4.9s (699 modules)
+ GET / 200 in 269ms
+ ○ Compiling /chat ...
+ ✓ Compiled /chat in 2.1s (808 modules)
+ GET /chat?idea=stock+price+analytic+predictior&stage=Idea&goal=Validate+idea 200 in 2387ms
+ ✓ Compiled in 452ms (363 modules)
+ GET /chat?idea=stock+price+analytic+predictior&stage=Idea&goal=Validate+idea 200 in 100ms
+ GET /chat?idea=stock+price+analytic+predictior&stage=Idea&goal=Validate+idea 200 in 26ms
+ ○ Compiling /api/chat ...
+ ✓ Compiled /api/chat in 879ms (838 modules)
+ POST /api/chat 500 in 1118ms
+ GET /chat?idea=stock+price+analytic+predictior&stage=Idea&goal=Validate+idea 200 in 307ms
+ ✓ Compiled in 2.4s (811 modules)

@@ -1,5 +1,6 @@
 import { Bot, User2 } from "lucide-react";
 
+import { MessageBubble } from "@/components/chat/message-bubble";
 import { cn } from "@/lib/utils";
 import { ChatMessage } from "@/types/chat";
 
@@ -20,18 +21,11 @@ export function ChatBubble({ message, isPlaceholder = false }: ChatBubbleProps) 
         </div>
       ) : null}
 
-      <div
-        className={cn(
-          "max-w-3xl rounded-3xl px-4 py-3 text-sm leading-7 shadow-lg",
-          isAssistant
-            ? "border border-white/10 bg-slate-800/90 text-slate-100"
-            : "bg-cyan-400 text-slate-950",
-        )}
-      >
-        <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] opacity-70">
+      <div className="flex max-w-3xl flex-col gap-2">
+        <p className="px-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
           {isAssistant ? "Bot" : "You"}
         </p>
-        <div className="whitespace-pre-wrap">{content}</div>
+        <MessageBubble role={isAssistant ? "bot" : "user"} content={content || ""} />
       </div>
 
       {!isAssistant ? (
