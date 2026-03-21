@@ -7,15 +7,19 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 
 type ChatComposerProps = {
+  theme: "dark" | "light";
   isLoading: boolean;
   error: string | null;
   onSubmit: (value: string) => Promise<void>;
+  onRetry?: () => Promise<void>;
 };
 
 export function ChatComposer({
+  theme,
   isLoading,
   error,
   onSubmit,
+  onRetry,
 }: ChatComposerProps) {
   const [value, setValue] = useState("");
 
@@ -38,20 +42,49 @@ export function ChatComposer({
         value={value}
         disabled={isLoading}
         onChange={(event) => setValue(event.target.value)}
-        className="min-h-24 border-white/10 bg-white/5 text-slate-100 placeholder:text-slate-500 focus:border-cyan-400 focus:ring-cyan-400/20"
+        className={
+          theme === "dark"
+            ? "min-h-24 border-white/10 bg-white/5 text-slate-100 placeholder:text-slate-500 focus:border-cyan-400 focus:ring-cyan-400/20"
+            : "min-h-24 border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 focus:border-sky-500 focus:ring-sky-500/20"
+        }
       />
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-sm text-slate-400">
+        <p
+          className={
+            error
+              ? "text-sm text-rose-500"
+              : theme === "dark"
+                ? "text-sm text-slate-400"
+                : "text-sm text-slate-500"
+          }
+        >
           {error || "Messages stay in local state and the latest response auto-scrolls into view."}
         </p>
-        <Button
-          type="submit"
-          disabled={isLoading || !value.trim()}
-          className="bg-cyan-400 text-slate-950 hover:bg-cyan-300"
-        >
-          <SendHorizontal className="mr-2 h-4 w-4" />
-          {isLoading ? "Thinking..." : "Send"}
-        </Button>
+        <div className="flex gap-2 self-end sm:self-auto">
+          {error && onRetry ? (
+            <Button
+              type="button"
+              variant="outline"
+              disabled={isLoading}
+              onClick={() => void onRetry()}
+              className={
+                theme === "dark"
+                  ? "border-white/10 bg-white/5 text-slate-100 hover:bg-white/10"
+                  : "border-slate-200 bg-white text-slate-800 hover:bg-slate-50"
+              }
+            >
+              Retry
+            </Button>
+          ) : null}
+          <Button
+            type="submit"
+            disabled={isLoading || !value.trim()}
+            className="bg-cyan-400 text-slate-950 hover:bg-cyan-300"
+          >
+            <SendHorizontal className="mr-2 h-4 w-4" />
+            {isLoading ? "Thinking..." : "Send"}
+          </Button>
+        </div>
       </div>
     </form>
   );
