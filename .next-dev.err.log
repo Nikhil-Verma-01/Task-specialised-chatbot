@@ -1,6 +1,5 @@
- ⚠ Found lockfile missing swc dependencies, patching...
- ⚠ Lockfile was successfully patched, please run "npm install" to ensure @next/swc dependencies are downloaded
  ⚠ Attempted to load @next/swc-win32-x64-msvc, but an error occurred: \\?\D:\Chatbot\node_modules\@next\swc-win32-x64-msvc\next-swc.win32-x64-msvc.node is not a valid Win32 application.
 \\?\D:\Chatbot\node_modules\@next\swc-win32-x64-msvc\next-swc.win32-x64-msvc.node
  ⚠ Attempted to load @next/swc-win32-x64-msvc, but an error occurred: \\?\D:\Chatbot\node_modules\@next\swc-win32-x64-msvc\next-swc.win32-x64-msvc.node is not a valid Win32 application.
 \\?\D:\Chatbot\node_modules\@next\swc-win32-x64-msvc\next-swc.win32-x64-msvc.node
+^C

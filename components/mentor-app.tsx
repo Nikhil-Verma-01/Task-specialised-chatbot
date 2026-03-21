@@ -161,7 +161,7 @@ export function MentorApp() {
             </div>
           </div>
 
-          {hasSession ? (
+          {hasSession && context ? (
             <ChatPanel
               context={context}
               messages={messages}

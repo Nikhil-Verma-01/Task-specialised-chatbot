@@ -11,7 +11,7 @@ type ChatBubbleProps = {
 
 export function ChatBubble({ message, isPlaceholder = false }: ChatBubbleProps) {
   const isAssistant = isPlaceholder || message?.role === "assistant";
-  const content = isPlaceholder ? "Thinking through the ugly parts..." : message?.content;
+  const content = isPlaceholder ? "Thinking..." : message?.content;
 
   return (
     <div className={cn("flex gap-3", isAssistant ? "justify-start" : "justify-end")}>

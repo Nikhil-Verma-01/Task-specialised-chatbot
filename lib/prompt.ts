@@ -1,9 +1,16 @@
-import { ChatMessage, MentorContext } from "@/types/chat";
+type MentorPromptInput = {
+  message: string;
+  idea: string;
+  stage: string;
+  goal: string;
+};
 
-export function buildMentorMessages(
-  context: MentorContext,
-  messages: Pick<ChatMessage, "role" | "content">[],
-) {
+export function buildMentorMessages({
+  message,
+  idea,
+  stage,
+  goal,
+}: MentorPromptInput) {
   return [
     {
       role: "system",
@@ -12,31 +19,30 @@ export function buildMentorMessages(
           type: "input_text",
           text: [
             "You are a brutally honest startup mentor.",
-            "Challenge weak ideas.",
-            "Avoid generic advice.",
-            "Give sharp, structured feedback.",
-            "Do not sugarcoat.",
-            "Always respond in this format:",
+            "You challenge weak ideas.",
+            "You avoid generic advice.",
+            "You give structured feedback.",
+            "Response format:",
             "1. Idea Summary",
             "2. Market Reality",
             "3. Biggest Mistake",
             "4. Brutal Truth",
             "5. Actionable Next Steps",
-            `User Idea: ${context.idea}`,
-            `Stage: ${context.stage}`,
-            `Goal: ${context.goal}`,
+            `User Idea: ${idea}`,
+            `Stage: ${stage}`,
+            `Goal: ${goal}`,
           ].join("\n"),
         },
       ],
     },
-    ...messages.map((message) => ({
-      role: message.role,
+    {
+      role: "user",
       content: [
         {
           type: "input_text",
-          text: message.content,
+          text: message,
         },
       ],
-    })),
+    },
   ];
 }

@@ -2,14 +2,34 @@ import { ChatMessage, MentorContext } from "@/types/chat";
 
 const CONTEXT_KEY = "lean-startup-mentor-context";
 const CONVERSATION_KEY = "lean-startup-mentor-conversation";
+const SESSION_KEY = "lean-startup-mentor-session";
 
-export function loadMentorContext(): MentorContext | null {
+type StoredChatSession = {
+  context: MentorContext;
+  messages: ChatMessage[];
+};
+
+function readJson<T>(key: string): T | null {
   if (typeof window === "undefined") {
     return null;
   }
 
-  const raw = window.localStorage.getItem(CONTEXT_KEY);
-  return raw ? (JSON.parse(raw) as MentorContext) : null;
+  try {
+    const raw = window.localStorage.getItem(key);
+    return raw ? (JSON.parse(raw) as T) : null;
+  } catch {
+    window.localStorage.removeItem(key);
+    return null;
+  }
+}
+
+export function loadMentorContext(): MentorContext | null {
+  const session = loadChatSession();
+  if (session) {
+    return session.context;
+  }
+
+  return readJson<MentorContext>(CONTEXT_KEY);
 }
 
 export function saveMentorContext(context: MentorContext | null) {
@@ -26,12 +46,12 @@ export function saveMentorContext(context: MentorContext | null) {
 }
 
 export function loadConversation(): ChatMessage[] {
-  if (typeof window === "undefined") {
-    return [];
+  const session = loadChatSession();
+  if (session) {
+    return session.messages;
   }
 
-  const raw = window.localStorage.getItem(CONVERSATION_KEY);
-  return raw ? (JSON.parse(raw) as ChatMessage[]) : [];
+  return readJson<ChatMessage[]>(CONVERSATION_KEY) || [];
 }
 
 export function saveConversation(messages: ChatMessage[]) {
@@ -40,4 +60,31 @@ export function saveConversation(messages: ChatMessage[]) {
   }
 
   window.localStorage.setItem(CONVERSATION_KEY, JSON.stringify(messages));
+}
+
+export function loadChatSession(): StoredChatSession | null {
+  return readJson<StoredChatSession>(SESSION_KEY);
+}
+
+export function saveChatSession(session: StoredChatSession | null) {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  if (!session) {
+    window.localStorage.removeItem(SESSION_KEY);
+    return;
+  }
+
+  window.localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+}
+
+export function clearChatSession() {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.localStorage.removeItem(CONTEXT_KEY);
+  window.localStorage.removeItem(CONVERSATION_KEY);
+  window.localStorage.removeItem(SESSION_KEY);
 }

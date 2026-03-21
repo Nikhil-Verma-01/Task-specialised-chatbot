@@ -50,7 +50,7 @@ export function ChatComposer({
           className="bg-cyan-400 text-slate-950 hover:bg-cyan-300"
         >
           <SendHorizontal className="mr-2 h-4 w-4" />
-          {isLoading ? "Sending..." : "Send"}
+          {isLoading ? "Thinking..." : "Send"}
         </Button>
       </div>
     </form>

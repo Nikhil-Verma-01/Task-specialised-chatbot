@@ -6,10 +6,9 @@ import { useEffect, useMemo, useState } from "react";
 import { ChatPanel } from "@/components/chat/chat-panel";
 import { APP_COPY, GOALS, STAGES, SUGGESTIONS } from "@/lib/constants";
 import {
-  loadConversation,
-  loadMentorContext,
-  saveConversation,
-  saveMentorContext,
+  clearChatSession,
+  loadChatSession,
+  saveChatSession,
 } from "@/lib/storage";
 import { ChatMessage, MentorContext } from "@/types/chat";
 
@@ -22,44 +21,72 @@ export function MentorChatPage({ initialContext }: MentorChatPageProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isHydrated, setIsHydrated] = useState(false);
+
+  function normalizeContext(value: MentorContext): MentorContext {
+    return {
+      idea: value.idea.trim(),
+      stage: STAGES.includes(value.stage) ? value.stage : STAGES[0],
+      goal: GOALS.includes(value.goal) ? value.goal : GOALS[0],
+    };
+  }
+
+  function isSameContext(left: MentorContext, right: MentorContext) {
+    return (
+      left.idea === right.idea &&
+      left.stage === right.stage &&
+      left.goal === right.goal
+    );
+  }
 
   useEffect(() => {
-    const hasQueryContext = Boolean(initialContext.idea.trim());
-    const normalizedContext = {
-      idea: initialContext.idea.trim(),
-      stage: STAGES.includes(initialContext.stage) ? initialContext.stage : STAGES[0],
-      goal: GOALS.includes(initialContext.goal) ? initialContext.goal : GOALS[0],
-    };
+    const storedSession = loadChatSession();
+    const normalizedContext = normalizeContext(initialContext);
+    const hasQueryContext = Boolean(normalizedContext.idea);
+
+    if (hasQueryContext && storedSession) {
+      if (isSameContext(storedSession.context, normalizedContext)) {
+        setContext(storedSession.context);
+        setMessages(storedSession.messages);
+      } else {
+        setContext(normalizedContext);
+        setMessages([]);
+      }
+
+      setIsHydrated(true);
+      return;
+    }
 
     if (hasQueryContext) {
       setContext(normalizedContext);
       setMessages([]);
-      saveMentorContext(normalizedContext);
-      saveConversation([]);
+      setIsHydrated(true);
       return;
     }
 
-    const storedContext = loadMentorContext();
-    const storedMessages = loadConversation();
-
-    if (storedContext) {
-      setContext(storedContext);
+    if (storedSession) {
+      setContext(storedSession.context);
+      setMessages(storedSession.messages);
     }
 
-    if (storedMessages.length > 0) {
-      setMessages(storedMessages);
-    }
+    setIsHydrated(true);
   }, [initialContext]);
 
   useEffect(() => {
-    if (context) {
-      saveMentorContext(context);
+    if (!isHydrated) {
+      return;
     }
-  }, [context]);
 
-  useEffect(() => {
-    saveConversation(messages);
-  }, [messages]);
+    if (!context) {
+      clearChatSession();
+      return;
+    }
+
+    saveChatSession({
+      context,
+      messages,
+    });
+  }, [context, isHydrated, messages]);
 
   const headerStats = useMemo(
     () => [
@@ -71,7 +98,9 @@ export function MentorChatPage({ initialContext }: MentorChatPageProps) {
   );
 
   async function handleSubmitMessage(content: string) {
-    if (!context || !content.trim() || isLoading) {
+    const trimmedContent = content.trim();
+
+    if (!context || !trimmedContent || isLoading) {
       return;
     }
 
@@ -80,7 +109,7 @@ export function MentorChatPage({ initialContext }: MentorChatPageProps) {
     const userMessage: ChatMessage = {
       id: crypto.randomUUID(),
       role: "user",
-      content: content.trim(),
+      content: trimmedContent,
       createdAt: new Date().toISOString(),
     };
 
@@ -95,12 +124,10 @@ export function MentorChatPage({ initialContext }: MentorChatPageProps) {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          context,
-          messages: nextMessages.map(({ id, role, content: body }) => ({
-            id,
-            role,
-            content: body,
-          })),
+          message: trimmedContent,
+          idea: context.idea,
+          stage: context.stage,
+          goal: context.goal,
         }),
       });
 
@@ -113,7 +140,7 @@ export function MentorChatPage({ initialContext }: MentorChatPageProps) {
       const assistantMessage: ChatMessage = {
         id: crypto.randomUUID(),
         role: "assistant",
-        content: data.message,
+        content: data.reply,
         createdAt: new Date().toISOString(),
       };
 
@@ -134,8 +161,7 @@ export function MentorChatPage({ initialContext }: MentorChatPageProps) {
     setContext(null);
     setMessages([]);
     setError(null);
-    saveConversation([]);
-    saveMentorContext(null);
+    clearChatSession();
   }
 
   return (
