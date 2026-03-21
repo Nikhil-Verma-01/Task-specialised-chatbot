@@ -1,0 +1,15 @@
+
+> lean-startup-mentor-bot@0.1.0 dev
+> next dev
+
+   Downloading swc package @next/swc-wasm-nodejs... to C:\Users\hp\AppData\Local\next-swc
+   next-swc build: wasm build @next/swc-wasm-web
+   next-swc build: wasm build @next/swc-wasm-web
+   ▲ Next.js 15.3.1
+   - Local:        http://localhost:3000
+   - Network:      http://172.22.69.22:3000
+
+ ✓ Starting...
+ ✓ Ready in 3.6s
+ ○ Compiling / ...
+ ✓ Compiled / in 9.3s (757 modules)

@@ -1,0 +1,37 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 42 33% 97%;
+    --foreground: 221 39% 11%;
+    --card: 0 0% 100%;
+    --card-foreground: 221 39% 11%;
+    --primary: 14 82% 46%;
+    --primary-foreground: 40 100% 98%;
+    --secondary: 42 36% 92%;
+    --secondary-foreground: 221 39% 17%;
+    --muted: 38 25% 93%;
+    --muted-foreground: 215 16% 38%;
+    --accent: 159 53% 91%;
+    --accent-foreground: 164 74% 18%;
+    --border: 30 18% 84%;
+    --input: 32 20% 88%;
+    --ring: 14 82% 46%;
+    --radius: 1rem;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    background-image:
+      radial-gradient(circle at top left, rgba(251, 146, 60, 0.22), transparent 30%),
+      radial-gradient(circle at top right, rgba(16, 185, 129, 0.18), transparent 24%),
+      linear-gradient(180deg, rgba(255, 255, 255, 0.6), rgba(255, 251, 235, 0.9));
+    min-height: 100vh;
+  }
+}
