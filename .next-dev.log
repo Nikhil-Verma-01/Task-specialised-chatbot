@@ -2,12 +2,10 @@
 > lean-startup-mentor-bot@0.1.0 dev
 > next dev
 
-   next-swc build: wasm build @next/swc-wasm-web
-   next-swc build: wasm build @next/swc-wasm-web
-   ▲ Next.js 15.3.1
+   ▲ Next.js 15.3.8
    - Local:        http://localhost:3000
    - Network:      http://172.22.69.22:3000
    - Environments: .env.local
 
  ✓ Starting...
- ✓ Ready in 4.4s
+ ✓ Ready in 2.6s

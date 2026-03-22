@@ -90,13 +90,13 @@ function buildFriendlyError(errorText: string) {
 }
 
 function shouldUseMockMode() {
-  return process.env.GROQ_USE_MOCK === "true" || process.env.GORK_USE_MOCK === "true";
+  return process.env.GROQ_USE_MOCK === "true";
 }
 
 function getGroqConfig() {
   return {
-    apiKey: process.env.GROQ_API_KEY || process.env.GORK_API_KEY,
-    model: process.env.GROQ_MODEL || process.env.GORK_MODEL || "llama-3.3-70b-versatile",
+    apiKey: process.env.GROQ_API_KEY,
+    model: process.env.GROQ_MODEL || "llama-3.3-70b-versatile",
   };
 }
 
