@@ -29,7 +29,9 @@ export function MentorChatPage({ initialContext }: MentorChatPageProps) {
   const [isHydrated, setIsHydrated] = useState(false);
   const [lastSubmittedMessage, setLastSubmittedMessage] = useState<string | null>(null);
   const [theme, setTheme] = useState<ThemeMode>("dark");
+  const [isInsideChatPanel, setIsInsideChatPanel] = useState(false);
   const cursorGlowRef = useRef<HTMLDivElement>(null);
+  const cursorShapeRef = useRef<HTMLDivElement>(null);
 
   function normalizeContext(value: MentorContext): MentorContext {
     return {
@@ -48,10 +50,6 @@ export function MentorChatPage({ initialContext }: MentorChatPageProps) {
   }
 
   useEffect(() => {
-    if (typeof window === "undefined") {
-      return;
-    }
-
     const storedTheme = window.localStorage.getItem(THEME_STORAGE_KEY);
     if (storedTheme === "light" || storedTheme === "dark") {
       setTheme(storedTheme);
@@ -101,49 +99,38 @@ export function MentorChatPage({ initialContext }: MentorChatPageProps) {
       return;
     }
 
-    saveChatSession({
-      context,
-      messages,
-    });
+    saveChatSession({ context, messages });
   }, [context, isHydrated, messages]);
 
   useEffect(() => {
-    if (typeof window === "undefined") {
-      return;
-    }
-
     window.localStorage.setItem(THEME_STORAGE_KEY, theme);
   }, [theme]);
 
   useEffect(() => {
-    if (typeof window === "undefined") {
-      return;
-    }
-
     let frame = 0;
 
     function handlePointerMove(event: PointerEvent) {
-      if (!cursorGlowRef.current) {
-        return;
-      }
-
       cancelAnimationFrame(frame);
       frame = window.requestAnimationFrame(() => {
-        if (!cursorGlowRef.current) {
-          return;
+        if (cursorGlowRef.current) {
+          cursorGlowRef.current.style.transform = `translate(${event.clientX - 180}px, ${event.clientY - 180}px)`;
+          cursorGlowRef.current.style.opacity = "1";
         }
 
-        cursorGlowRef.current.style.transform = `translate(${event.clientX - 180}px, ${event.clientY - 180}px)`;
-        cursorGlowRef.current.style.opacity = "1";
+        if (cursorShapeRef.current) {
+          cursorShapeRef.current.style.transform = `translate(${event.clientX - 20}px, ${event.clientY - 20}px)`;
+          cursorShapeRef.current.style.opacity = isInsideChatPanel ? "0" : "1";
+        }
       });
     }
 
     function handlePointerLeave() {
-      if (!cursorGlowRef.current) {
-        return;
+      if (cursorGlowRef.current) {
+        cursorGlowRef.current.style.opacity = "0";
       }
-
-      cursorGlowRef.current.style.opacity = "0";
+      if (cursorShapeRef.current) {
+        cursorShapeRef.current.style.opacity = "0";
+      }
     }
 
     window.addEventListener("pointermove", handlePointerMove);
@@ -154,7 +141,7 @@ export function MentorChatPage({ initialContext }: MentorChatPageProps) {
       window.removeEventListener("pointermove", handlePointerMove);
       window.removeEventListener("pointerleave", handlePointerLeave);
     };
-  }, []);
+  }, [isInsideChatPanel]);
 
   const headerStats = useMemo(
     () => [
@@ -165,10 +152,7 @@ export function MentorChatPage({ initialContext }: MentorChatPageProps) {
     [context, theme],
   );
 
-  async function requestBotReply(
-    userContent: string,
-    nextMessages: ChatMessage[],
-  ) {
+  async function requestBotReply(userContent: string, nextMessages: ChatMessage[]) {
     if (!context || isLoading) {
       return;
     }
@@ -180,9 +164,7 @@ export function MentorChatPage({ initialContext }: MentorChatPageProps) {
     try {
       const response = await fetch("/api/chat", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           message: userContent,
           idea: context.idea,
@@ -260,8 +242,8 @@ export function MentorChatPage({ initialContext }: MentorChatPageProps) {
     <main
       className={
         theme === "dark"
-          ? "relative min-h-screen overflow-hidden bg-[radial-gradient(circle_at_top_left,rgba(251,146,60,0.16),transparent_24%),radial-gradient(circle_at_top_right,rgba(16,185,129,0.12),transparent_22%),linear-gradient(180deg,#020617,#081223_42%,#0b1325)] px-4 py-8 text-slate-100"
-          : "relative min-h-screen overflow-hidden bg-[radial-gradient(circle_at_top_left,rgba(251,146,60,0.18),transparent_28%),radial-gradient(circle_at_top_right,rgba(16,185,129,0.14),transparent_24%),linear-gradient(180deg,#fffdf8,#f7f5ef_38%,#eef4f8)] px-4 py-8 text-slate-900"
+          ? `relative min-h-screen overflow-hidden bg-[radial-gradient(circle_at_top_left,rgba(251,146,60,0.16),transparent_24%),radial-gradient(circle_at_top_right,rgba(16,185,129,0.12),transparent_22%),linear-gradient(180deg,#020617,#081223_42%,#0b1325)] px-4 py-8 text-slate-100 ${isInsideChatPanel ? "cursor-auto" : "cursor-none"}`
+          : `relative min-h-screen overflow-hidden bg-[radial-gradient(circle_at_top_left,rgba(251,146,60,0.18),transparent_28%),radial-gradient(circle_at_top_right,rgba(16,185,129,0.14),transparent_24%),linear-gradient(180deg,#fffdf8,#f7f5ef_38%,#eef4f8)] px-4 py-8 text-slate-900 ${isInsideChatPanel ? "cursor-auto" : "cursor-none"}`
       }
     >
       <div
@@ -272,7 +254,25 @@ export function MentorChatPage({ initialContext }: MentorChatPageProps) {
             : "pointer-events-none fixed left-0 top-0 z-0 h-[360px] w-[360px] rounded-full bg-[radial-gradient(circle,rgba(56,189,248,0.16),rgba(16,185,129,0.10)_38%,transparent_72%)] opacity-0 blur-3xl transition-opacity duration-300"
         }
       />
-
+      <div
+        ref={cursorShapeRef}
+        className="pointer-events-none fixed left-0 top-0 z-50 h-10 w-10 opacity-0 transition-opacity duration-200"
+      >
+        <div
+          className={
+            theme === "dark"
+              ? "absolute inset-0 rotate-45 rounded-[0.9rem] border border-cyan-300/60 bg-cyan-300/10 shadow-[0_0_35px_rgba(56,189,248,0.18)]"
+              : "absolute inset-0 rotate-45 rounded-[0.9rem] border border-orange-400/55 bg-orange-400/10 shadow-[0_0_35px_rgba(249,115,22,0.16)]"
+          }
+        />
+        <div
+          className={
+            theme === "dark"
+              ? "absolute left-1/2 top-1/2 h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-cyan-200"
+              : "absolute left-1/2 top-1/2 h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-orange-500"
+          }
+        />
+      </div>
       <div
         className={
           theme === "dark"
@@ -284,32 +284,14 @@ export function MentorChatPage({ initialContext }: MentorChatPageProps) {
       <div className="relative z-10 mx-auto flex max-w-7xl flex-col gap-8">
         <section className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div className="space-y-4">
-            <p
-              className={
-                theme === "dark"
-                  ? "text-sm font-medium uppercase tracking-[0.24em] text-cyan-300/80"
-                  : "text-sm font-medium uppercase tracking-[0.24em] text-sky-700"
-              }
-            >
+            <p className={theme === "dark" ? "text-sm font-medium uppercase tracking-[0.24em] text-cyan-300/80" : "text-sm font-medium uppercase tracking-[0.24em] text-sky-700"}>
               Lean Startup Mentor Bot
             </p>
             <div className="space-y-3">
-              <h1
-                className={
-                  theme === "dark"
-                    ? "max-w-3xl font-[var(--font-heading)] text-4xl font-semibold tracking-tight text-white sm:text-5xl"
-                    : "max-w-3xl font-[var(--font-heading)] text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl"
-                }
-              >
+              <h1 className={theme === "dark" ? "max-w-3xl font-[var(--font-heading)] text-4xl font-semibold tracking-tight text-white sm:text-5xl" : "max-w-3xl font-[var(--font-heading)] text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl"}>
                 Minimal chat UI for startup feedback.
               </h1>
-              <p
-                className={
-                  theme === "dark"
-                    ? "max-w-2xl text-base leading-7 text-slate-400 sm:text-lg"
-                    : "max-w-2xl text-base leading-7 text-slate-600 sm:text-lg"
-                }
-              >
+              <p className={theme === "dark" ? "max-w-2xl text-base leading-7 text-slate-400 sm:text-lg" : "max-w-2xl text-base leading-7 text-slate-600 sm:text-lg"}>
                 {APP_COPY.description}
               </p>
             </div>
@@ -321,8 +303,8 @@ export function MentorChatPage({ initialContext }: MentorChatPageProps) {
               onClick={toggleTheme}
               className={
                 theme === "dark"
-                  ? "inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-medium text-slate-100 transition duration-300 hover:-translate-y-0.5 hover:bg-white/10 hover:shadow-[0_0_40px_rgba(56,189,248,0.14)]"
-                  : "inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 transition duration-300 hover:-translate-y-0.5 hover:bg-slate-50 hover:shadow-[0_16px_40px_rgba(14,165,233,0.12)]"
+                  ? "cursor-auto inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-medium text-slate-100 transition duration-300 hover:-translate-y-0.5 hover:bg-white/10 hover:shadow-[0_0_40px_rgba(56,189,248,0.14)]"
+                  : "cursor-auto inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 transition duration-300 hover:-translate-y-0.5 hover:bg-slate-50 hover:shadow-[0_16px_40px_rgba(14,165,233,0.12)]"
               }
             >
               {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
@@ -330,65 +312,49 @@ export function MentorChatPage({ initialContext }: MentorChatPageProps) {
             </button>
 
             <div className="grid gap-3 sm:grid-cols-3">
-            {headerStats.map((item) => (
-              <div
-                key={item.label}
-                className={
-                  theme === "dark"
-                    ? "rounded-3xl border border-white/10 bg-white/5 px-4 py-3 shadow-lg backdrop-blur"
-                    : "rounded-3xl border border-slate-200 bg-white/90 px-4 py-3 shadow-sm"
-                }
-              >
-                <p
+              {headerStats.map((item) => (
+                <div
+                  key={item.label}
                   className={
                     theme === "dark"
-                      ? "text-xs uppercase tracking-[0.18em] text-slate-500"
-                      : "text-xs uppercase tracking-[0.18em] text-slate-500"
+                      ? "rounded-3xl border border-white/10 bg-white/5 px-4 py-3 shadow-lg backdrop-blur"
+                      : "rounded-3xl border border-slate-200 bg-white/90 px-4 py-3 shadow-sm"
                   }
                 >
-                  {item.label}
-                </p>
-                <p
-                  className={
-                    theme === "dark"
-                      ? "mt-2 text-sm font-semibold text-white"
-                      : "mt-2 text-sm font-semibold text-slate-900"
-                  }
-                >
-                  {item.value}
-                </p>
-              </div>
-            ))}
+                  <p className="text-xs uppercase tracking-[0.18em] text-slate-500">{item.label}</p>
+                  <p className={theme === "dark" ? "mt-2 text-sm font-semibold text-white" : "mt-2 text-sm font-semibold text-slate-900"}>{item.value}</p>
+                </div>
+              ))}
             </div>
           </div>
         </section>
 
         {context ? (
-          <ChatPanel
-            theme={theme}
-            context={context}
-            messages={messages}
-            isLoading={isLoading}
-            error={error}
-            suggestions={SUGGESTIONS}
-            onReset={handleReset}
-            onSubmit={handleSubmitMessage}
-            onRetry={handleRetry}
-          />
-        ) : (
           <div
-            className={
-              theme === "dark"
-                ? "rounded-[1.75rem] border border-white/10 bg-white/5 p-8 text-center shadow-panel"
-                : "rounded-[1.75rem] border border-slate-200 bg-white/90 p-8 text-center shadow-sm"
-            }
+            className="cursor-auto"
+            onPointerEnter={() => setIsInsideChatPanel(true)}
+            onPointerLeave={() => setIsInsideChatPanel(false)}
           >
+            <ChatPanel
+              theme={theme}
+              context={context}
+              messages={messages}
+              isLoading={isLoading}
+              error={error}
+              suggestions={SUGGESTIONS}
+              onReset={handleReset}
+              onSubmit={handleSubmitMessage}
+              onRetry={handleRetry}
+            />
+          </div>
+        ) : (
+          <div className={theme === "dark" ? "rounded-[1.75rem] border border-white/10 bg-white/5 p-8 text-center shadow-panel" : "rounded-[1.75rem] border border-slate-200 bg-white/90 p-8 text-center shadow-sm"}>
             <p className={theme === "dark" ? "text-sm text-slate-400" : "text-sm text-slate-600"}>
               No setup data found. Start a new analysis to continue.
             </p>
             <Link
               href="/"
-              className="mt-4 inline-flex rounded-xl bg-cyan-400 px-4 py-2 text-sm font-medium text-slate-950"
+              className="cursor-auto mt-4 inline-flex rounded-xl bg-cyan-400 px-4 py-2 text-sm font-medium text-slate-950"
             >
               Back to setup
             </Link>

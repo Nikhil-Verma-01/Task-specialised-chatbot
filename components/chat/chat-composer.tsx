@@ -44,8 +44,8 @@ export function ChatComposer({
         onChange={(event) => setValue(event.target.value)}
         className={
           theme === "dark"
-            ? "min-h-24 border-white/10 bg-white/5 text-slate-100 placeholder:text-slate-500 focus:border-cyan-400 focus:ring-cyan-400/20"
-            : "min-h-24 border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 focus:border-sky-500 focus:ring-sky-500/20"
+            ? "min-h-24 resize-none border-white/10 bg-white/5 text-slate-100 placeholder:text-slate-500 focus:border-cyan-400 focus:ring-cyan-400/20"
+            : "min-h-24 resize-none border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 focus:border-sky-500 focus:ring-sky-500/20"
         }
       />
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -58,7 +58,7 @@ export function ChatComposer({
                 : "text-sm text-slate-500"
           }
         >
-          {error || "Messages stay in local state and the latest response auto-scrolls into view."}
+          {error || "Messages are stored locally and the newest reply stays in view."}
         </p>
         <div className="flex gap-2 self-end sm:self-auto">
           {error && onRetry ? (
@@ -79,7 +79,7 @@ export function ChatComposer({
           <Button
             type="submit"
             disabled={isLoading || !value.trim()}
-            className="bg-cyan-400 text-slate-950 hover:bg-cyan-300"
+            className="min-w-28 bg-cyan-400 text-slate-950 hover:bg-cyan-300"
           >
             <SendHorizontal className="mr-2 h-4 w-4" />
             {isLoading ? "Thinking..." : "Send"}

@@ -83,7 +83,9 @@ export function SetupForm({
 }: SetupFormProps) {
   const router = useRouter();
   const cursorGlowRef = useRef<HTMLDivElement>(null);
+  const cursorShapeRef = useRef<HTMLDivElement>(null);
   const [typedText, setTypedText] = useState("");
+  const [isInsideSetupZone, setIsInsideSetupZone] = useState(false);
   const [form, setForm] = useState<MentorContext>({
     idea: initialValue?.idea ?? "",
     stage: initialValue?.stage ?? STAGES[0],
@@ -131,27 +133,27 @@ export function SetupForm({
     let frame = 0;
 
     function handlePointerMove(event: PointerEvent) {
-      if (!cursorGlowRef.current) {
-        return;
-      }
-
       cancelAnimationFrame(frame);
       frame = window.requestAnimationFrame(() => {
-        if (!cursorGlowRef.current) {
-          return;
+        if (cursorGlowRef.current) {
+          cursorGlowRef.current.style.transform = `translate(${event.clientX - 220}px, ${event.clientY - 220}px)`;
+          cursorGlowRef.current.style.opacity = "1";
         }
 
-        cursorGlowRef.current.style.transform = `translate(${event.clientX - 220}px, ${event.clientY - 220}px)`;
-        cursorGlowRef.current.style.opacity = "1";
+        if (cursorShapeRef.current) {
+          cursorShapeRef.current.style.transform = `translate(${event.clientX - 24}px, ${event.clientY - 24}px)`;
+          cursorShapeRef.current.style.opacity = isInsideSetupZone ? "0" : "1";
+        }
       });
     }
 
     function handlePointerLeave() {
-      if (!cursorGlowRef.current) {
-        return;
+      if (cursorGlowRef.current) {
+        cursorGlowRef.current.style.opacity = "0";
       }
-
-      cursorGlowRef.current.style.opacity = "0";
+      if (cursorShapeRef.current) {
+        cursorShapeRef.current.style.opacity = "0";
+      }
     }
 
     window.addEventListener("pointermove", handlePointerMove);
@@ -162,7 +164,7 @@ export function SetupForm({
       window.removeEventListener("pointermove", handlePointerMove);
       window.removeEventListener("pointerleave", handlePointerLeave);
     };
-  }, []);
+  }, [isInsideSetupZone]);
 
   function updateField<K extends keyof MentorContext>(
     key: K,
@@ -191,11 +193,18 @@ export function SetupForm({
   }
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[radial-gradient(circle_at_top_left,rgba(251,146,60,0.22),transparent_22%),radial-gradient(circle_at_top_right,rgba(16,185,129,0.16),transparent_22%),linear-gradient(180deg,#fffdf8,#fbf7ef_42%,#eff5f7)] text-slate-950">
+    <main className={`relative min-h-screen overflow-hidden bg-[radial-gradient(circle_at_top_left,rgba(251,146,60,0.22),transparent_22%),radial-gradient(circle_at_top_right,rgba(16,185,129,0.16),transparent_22%),linear-gradient(180deg,#fffdf8,#fbf7ef_42%,#eff5f7)] text-slate-950 ${isInsideSetupZone ? "cursor-auto" : "cursor-none"}`}>
       <div
         ref={cursorGlowRef}
         className="pointer-events-none fixed left-0 top-0 z-0 h-[440px] w-[440px] rounded-full bg-[radial-gradient(circle,rgba(251,146,60,0.18),rgba(56,189,248,0.10)_38%,transparent_72%)] opacity-0 blur-3xl transition-opacity duration-300"
       />
+      <div
+        ref={cursorShapeRef}
+        className="pointer-events-none fixed left-0 top-0 z-50 h-12 w-12 opacity-0 transition-opacity duration-200"
+      >
+        <div className="absolute inset-0 rounded-full border border-orange-400/60 bg-white/35 shadow-[0_0_40px_rgba(249,115,22,0.16)] backdrop-blur-sm" />
+        <div className="absolute left-1/2 top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-orange-500" />
+      </div>
       <div className="pointer-events-none absolute inset-0 z-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.55),transparent_30%)]" />
 
       <div className="relative z-10">
@@ -220,7 +229,7 @@ export function SetupForm({
 
             <a
               href="#setup-form"
-              className="group inline-flex w-fit items-center gap-3 rounded-full border border-slate-200 bg-white/80 px-5 py-3 text-sm font-medium text-slate-700 shadow-[0_16px_40px_rgba(15,23,42,0.08)] transition duration-300 hover:-translate-y-0.5 hover:bg-white"
+              className="cursor-auto group inline-flex w-fit items-center gap-3 rounded-full border border-slate-200 bg-white/80 px-5 py-3 text-sm font-medium text-slate-700 shadow-[0_16px_40px_rgba(15,23,42,0.08)] transition duration-300 hover:-translate-y-0.5 hover:bg-white"
             >
               Scroll to setup
               <span className="flex h-8 w-8 items-center justify-center rounded-full bg-orange-100 text-orange-600 transition duration-300 group-hover:translate-y-0.5">
@@ -230,7 +239,12 @@ export function SetupForm({
           </div>
         </section>
 
-        <section id="setup-form" className="px-4 pb-20 sm:px-8 lg:px-12">
+        <section
+          id="setup-form"
+          className="cursor-auto px-4 pb-20 sm:px-8 lg:px-12"
+          onPointerEnter={() => setIsInsideSetupZone(true)}
+          onPointerLeave={() => setIsInsideSetupZone(false)}
+        >
           <div className="mx-auto max-w-7xl">
             <form className="space-y-12" onSubmit={handleSubmit}>
               <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-start">
@@ -295,6 +309,3 @@ export function SetupForm({
     </main>
   );
 }
-
-
-

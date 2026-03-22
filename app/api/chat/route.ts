@@ -10,64 +10,23 @@ const requestSchema = z.object({
   goal: z.string().trim().min(1),
 });
 
-const legacyRequestSchema = z.object({
-  context: z.object({
-    idea: z.string().trim().min(1),
-    stage: z.string().trim().min(1),
-    goal: z.string().trim().min(1),
-  }),
-  messages: z
-    .array(
-      z.object({
-        id: z.string(),
-        role: z.enum(["user", "assistant"]),
-        content: z.string().trim().min(1),
-      }),
-    )
-    .min(1),
-});
+type ChatPayload = z.infer<typeof requestSchema>;
 
-type ChatPayload = {
-  message: string;
-  idea: string;
-  stage: string;
-  goal: string;
+type GroqErrorResponse = {
+  error?: {
+    message?: string;
+    type?: string;
+    code?: string;
+  };
 };
 
-function normalizeRequestBody(payload: unknown): ChatPayload {
-  const nextPayload = requestSchema.safeParse(payload);
-
-  if (nextPayload.success) {
-    return nextPayload.data;
-  }
-
-  const legacyPayload = legacyRequestSchema.safeParse(payload);
-
-  if (legacyPayload.success) {
-    const latestUserMessage = [...legacyPayload.data.messages]
-      .reverse()
-      .find((message) => message.role === "user");
-
-    if (!latestUserMessage) {
-      throw new z.ZodError([
-        {
-          code: "custom",
-          message: "At least one user message is required.",
-          path: ["message"],
-        },
-      ]);
-    }
-
-    return {
-      message: latestUserMessage.content,
-      idea: legacyPayload.data.context.idea,
-      stage: legacyPayload.data.context.stage,
-      goal: legacyPayload.data.context.goal,
+type GroqCompletionResponse = {
+  choices?: Array<{
+    message?: {
+      content?: string;
     };
-  }
-
-  throw new z.ZodError(nextPayload.error.issues);
-}
+  }>;
+};
 
 function buildMockReply({ message, idea, stage, goal }: ChatPayload) {
   return [
@@ -83,29 +42,27 @@ function buildMockReply({ message, idea, stage, goal }: ChatPayload) {
     "4. Brutal Truth",
     "A startup does not fail because the idea sounds bad in a chat. It fails when nobody urgently wants it enough to change behavior or pay.",
     "",
-    "5. Actionable Next Steps",
+    "5. Action Steps",
     "Interview 5 target users this week and ask how they solve this today.",
     "Define the single buyer persona most likely to care first.",
     "Write one concrete value proposition without buzzwords.",
     "Test a landing page or outreach pitch before building more.",
-    "This is a mock response because OpenAI mock mode is enabled.",
+    "This is a mock response because mock mode is enabled.",
   ].join("\n");
 }
 
 function parseProviderError(errorText: string) {
   try {
-    const parsed = JSON.parse(errorText) as {
-      error?: { message?: string; type?: string; code?: string };
-    };
+    const parsed = JSON.parse(errorText) as GroqErrorResponse;
 
     return {
-      message: parsed.error?.message || "OpenAI request failed.",
+      message: parsed.error?.message || "Provider request failed.",
       type: parsed.error?.type,
       code: parsed.error?.code,
     };
   } catch {
     return {
-      message: errorText || "OpenAI request failed.",
+      message: errorText || "Provider request failed.",
       type: undefined,
       code: undefined,
     };
@@ -121,7 +78,7 @@ function buildFriendlyError(errorText: string) {
   ) {
     return {
       error:
-        "Your OpenAI project has no available quota right now. Add billing or credits, or enable OPENAI_USE_MOCK=true in .env.local to keep building locally.",
+        "Your Groq project has no available quota right now. Add credits or enable mock mode in .env.local to keep building locally.",
       code: "insufficient_quota",
     };
   }
@@ -133,13 +90,20 @@ function buildFriendlyError(errorText: string) {
 }
 
 function shouldUseMockMode() {
-  return process.env.OPENAI_USE_MOCK === "true";
+  return process.env.GROQ_USE_MOCK === "true" || process.env.GORK_USE_MOCK === "true";
+}
+
+function getGroqConfig() {
+  return {
+    apiKey: process.env.GROQ_API_KEY || process.env.GORK_API_KEY,
+    model: process.env.GROQ_MODEL || process.env.GORK_MODEL || "llama-3.3-70b-versatile",
+  };
 }
 
 export async function POST(request: Request) {
   try {
-    const payload = normalizeRequestBody(await request.json());
-    const apiKey = process.env.OPENAI_API_KEY;
+    const payload = requestSchema.parse(await request.json());
+    const { apiKey, model } = getGroqConfig();
 
     if (shouldUseMockMode()) {
       return NextResponse.json({
@@ -151,45 +115,47 @@ export async function POST(request: Request) {
     if (!apiKey) {
       return NextResponse.json(
         {
-          error:
-            "OPENAI_API_KEY is missing. Add it to .env.local or enable OPENAI_USE_MOCK=true for local development.",
+          error: "GROQ_API_KEY is missing. Add GROQ_API_KEY to .env.local.",
           code: "missing_api_key",
         },
         { status: 500 },
       );
     }
 
-    const openAiResponse = await fetch("https://api.openai.com/v1/responses", {
+    const groqResponse = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: process.env.OPENAI_MODEL || "gpt-4.1-mini",
-        input: buildMentorMessages(payload),
+        model,
+        messages: buildMentorMessages(payload),
         temperature: 0.8,
       }),
     });
 
-    if (!openAiResponse.ok) {
-      const errorText = await openAiResponse.text();
+    if (!groqResponse.ok) {
+      const errorText = await groqResponse.text();
       return NextResponse.json(buildFriendlyError(errorText), {
-        status: openAiResponse.status,
+        status: groqResponse.status,
       });
     }
 
-    const data = await openAiResponse.json();
-    const reply =
-      data.output_text ||
-      data.output
-        ?.flatMap((item: { content?: Array<{ text?: string }> }) =>
-          (item.content || []).map((content) => content.text || ""),
-        )
-        .join("") ||
-      "";
+    const data = (await groqResponse.json()) as GroqCompletionResponse;
+    const reply = data.choices?.[0]?.message?.content?.trim();
 
-    return NextResponse.json({ reply: reply.trim(), mode: "live" });
+    if (!reply) {
+      return NextResponse.json(
+        {
+          error: "The model returned an empty response.",
+          code: "empty_response",
+        },
+        { status: 502 },
+      );
+    }
+
+    return NextResponse.json({ reply, mode: "live" });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(

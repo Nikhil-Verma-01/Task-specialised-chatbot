@@ -10,11 +10,7 @@ export function HomeSetupPage() {
   const [initialValue, setInitialValue] = useState<Partial<MentorContext>>();
 
   useEffect(() => {
-    const storedSession = loadChatSession();
-
-    if (storedSession) {
-      setInitialValue(storedSession.context);
-    }
+    setInitialValue(loadChatSession()?.context);
   }, []);
 
   return <SetupForm initialValue={initialValue} />;

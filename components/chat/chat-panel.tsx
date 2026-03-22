@@ -5,9 +5,9 @@ import { RotateCcw } from "lucide-react";
 import { ChatComposer } from "@/components/chat/chat-composer";
 import { ChatMessageList } from "@/components/chat/chat-message-list";
 import { SuggestionChips } from "@/components/chat/suggestion-chips";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { MentorContext, ChatMessage } from "@/types/chat";
+import { Button } from "@/components/ui/button";
+import { ChatMessage, MentorContext } from "@/types/chat";
 
 type ChatPanelProps = {
   theme: "dark" | "light";
@@ -33,12 +33,12 @@ export function ChatPanel({
   onReset,
 }: ChatPanelProps) {
   return (
-    <div className="grid min-h-[72vh] gap-6 lg:grid-cols-[320px_minmax(0,1fr)]">
+    <div className="grid min-h-[72vh] gap-6 lg:grid-cols-[300px_minmax(0,1fr)] xl:grid-cols-[320px_minmax(0,1fr)]">
       <aside
         className={
           theme === "dark"
-            ? "flex flex-col gap-4 rounded-[28px] border border-white/10 bg-white/5 p-5 text-slate-200 shadow-2xl backdrop-blur"
-            : "flex flex-col gap-4 rounded-[28px] border border-slate-200 bg-white/90 p-5 text-slate-800 shadow-sm"
+            ? "order-2 flex flex-col gap-4 rounded-[28px] border border-white/10 bg-white/5 p-5 text-slate-200 shadow-2xl backdrop-blur lg:order-1"
+            : "order-2 flex flex-col gap-4 rounded-[28px] border border-slate-200 bg-white/90 p-5 text-slate-800 shadow-sm lg:order-1"
         }
       >
         <div className="space-y-2">
@@ -88,11 +88,7 @@ export function ChatPanel({
           </div>
         </div>
 
-        <SuggestionChips
-          items={suggestions}
-          disabled={isLoading}
-          onSelect={onSubmit}
-        />
+        <SuggestionChips items={suggestions} disabled={isLoading} onSelect={onSubmit} />
 
         <Button
           type="button"
@@ -112,8 +108,8 @@ export function ChatPanel({
       <section
         className={
           theme === "dark"
-            ? "flex min-h-[72vh] flex-col overflow-hidden rounded-[32px] border border-white/10 bg-[#0b1120]/90 shadow-2xl backdrop-blur"
-            : "flex min-h-[72vh] flex-col overflow-hidden rounded-[32px] border border-slate-200 bg-white/95 shadow-sm"
+            ? "order-1 flex min-h-[72vh] flex-col overflow-hidden rounded-[32px] border border-white/10 bg-[#0b1120]/90 shadow-2xl backdrop-blur lg:order-2"
+            : "order-1 flex min-h-[72vh] flex-col overflow-hidden rounded-[32px] border border-slate-200 bg-white/95 shadow-sm lg:order-2"
         }
       >
         <div className={theme === "dark" ? "border-b border-white/10 px-5 py-4 sm:px-6" : "border-b border-slate-200 px-5 py-4 sm:px-6"}>

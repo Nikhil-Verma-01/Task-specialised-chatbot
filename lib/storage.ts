@@ -1,15 +1,13 @@
 import { ChatMessage, MentorContext } from "@/types/chat";
 
-const CONTEXT_KEY = "lean-startup-mentor-context";
-const CONVERSATION_KEY = "lean-startup-mentor-conversation";
-const SESSION_KEY = "lean-startup-mentor-session";
+const SESSION_STORAGE_KEY = "lean-startup-mentor-session";
 
-type StoredChatSession = {
+export type StoredChatSession = {
   context: MentorContext;
   messages: ChatMessage[];
 };
 
-function readJson<T>(key: string): T | null {
+function readStorageValue<T>(key: string): T | null {
   if (typeof window === "undefined") {
     return null;
   }
@@ -23,47 +21,51 @@ function readJson<T>(key: string): T | null {
   }
 }
 
-export function loadMentorContext(): MentorContext | null {
-  const session = loadChatSession();
-  if (session) {
-    return session.context;
-  }
-
-  return readJson<MentorContext>(CONTEXT_KEY);
+function isValidContext(value: unknown): value is MentorContext {
+  return Boolean(
+    value &&
+      typeof value === "object" &&
+      typeof (value as MentorContext).idea === "string" &&
+      typeof (value as MentorContext).stage === "string" &&
+      typeof (value as MentorContext).goal === "string",
+  );
 }
 
-export function saveMentorContext(context: MentorContext | null) {
-  if (typeof window === "undefined") {
-    return;
-  }
-
-  if (!context) {
-    window.localStorage.removeItem(CONTEXT_KEY);
-    return;
-  }
-
-  window.localStorage.setItem(CONTEXT_KEY, JSON.stringify(context));
+function isValidMessage(value: unknown): value is ChatMessage {
+  return Boolean(
+    value &&
+      typeof value === "object" &&
+      typeof (value as ChatMessage).id === "string" &&
+      ((value as ChatMessage).role === "user" ||
+        (value as ChatMessage).role === "assistant") &&
+      typeof (value as ChatMessage).content === "string" &&
+      typeof (value as ChatMessage).createdAt === "string",
+  );
 }
 
-export function loadConversation(): ChatMessage[] {
-  const session = loadChatSession();
-  if (session) {
-    return session.messages;
-  }
-
-  return readJson<ChatMessage[]>(CONVERSATION_KEY) || [];
-}
-
-export function saveConversation(messages: ChatMessage[]) {
-  if (typeof window === "undefined") {
-    return;
-  }
-
-  window.localStorage.setItem(CONVERSATION_KEY, JSON.stringify(messages));
+function isValidSession(value: unknown): value is StoredChatSession {
+  return Boolean(
+    value &&
+      typeof value === "object" &&
+      isValidContext((value as StoredChatSession).context) &&
+      Array.isArray((value as StoredChatSession).messages) &&
+      (value as StoredChatSession).messages.every(isValidMessage),
+  );
 }
 
 export function loadChatSession(): StoredChatSession | null {
-  return readJson<StoredChatSession>(SESSION_KEY);
+  const session = readStorageValue<unknown>(SESSION_STORAGE_KEY);
+
+  if (!session) {
+    return null;
+  }
+
+  if (!isValidSession(session)) {
+    clearChatSession();
+    return null;
+  }
+
+  return session;
 }
 
 export function saveChatSession(session: StoredChatSession | null) {
@@ -72,11 +74,11 @@ export function saveChatSession(session: StoredChatSession | null) {
   }
 
   if (!session) {
-    window.localStorage.removeItem(SESSION_KEY);
+    window.localStorage.removeItem(SESSION_STORAGE_KEY);
     return;
   }
 
-  window.localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+  window.localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session));
 }
 
 export function clearChatSession() {
@@ -84,7 +86,5 @@ export function clearChatSession() {
     return;
   }
 
-  window.localStorage.removeItem(CONTEXT_KEY);
-  window.localStorage.removeItem(CONVERSATION_KEY);
-  window.localStorage.removeItem(SESSION_KEY);
+  window.localStorage.removeItem(SESSION_STORAGE_KEY);
 }

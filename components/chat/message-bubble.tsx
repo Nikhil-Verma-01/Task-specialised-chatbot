@@ -1,3 +1,11 @@
+import {
+  AlertTriangle,
+  Briefcase,
+  Flag,
+  Rocket,
+  TrendingUp,
+} from "lucide-react";
+
 import { cn } from "@/lib/utils";
 
 type MessageBubbleProps = {
@@ -21,7 +29,11 @@ type ParsedSection = {
 };
 
 function normalizeHeading(rawHeading: string) {
-  const cleanedHeading = rawHeading.replace(/^\d+\.\s*/, "").trim();
+  const cleanedHeading = rawHeading
+    .replace(/\*\*/g, "")
+    .replace(/^#+\s*/, "")
+    .replace(/^\d+\.\s*/, "")
+    .trim();
 
   if (cleanedHeading === "Actionable Next Steps") {
     return "Action Steps";
@@ -84,6 +96,43 @@ function parseBotSections(content: string): ParsedSection[] {
   return sections.filter((section) => section.body);
 }
 
+function splitSectionBody(body: string) {
+  return body
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+}
+
+function getSectionMeta(heading: string) {
+  switch (heading) {
+    case "Idea Summary":
+      return {
+        icon: Briefcase,
+        accent: "from-sky-400/20 via-cyan-300/10 to-transparent",
+      };
+    case "Market Reality":
+      return {
+        icon: TrendingUp,
+        accent: "from-emerald-400/20 via-teal-300/10 to-transparent",
+      };
+    case "Biggest Mistake":
+      return {
+        icon: AlertTriangle,
+        accent: "from-amber-400/20 via-orange-300/10 to-transparent",
+      };
+    case "Brutal Truth":
+      return {
+        icon: Flag,
+        accent: "from-rose-400/20 via-pink-300/10 to-transparent",
+      };
+    default:
+      return {
+        icon: Rocket,
+        accent: "from-violet-400/20 via-fuchsia-300/10 to-transparent",
+      };
+  }
+}
+
 function BotResponseSections({
   content,
   theme,
@@ -99,23 +148,77 @@ function BotResponseSections({
 
   return (
     <div className="space-y-4">
-      {sections.map((section) => (
-        <section
-          key={section.heading}
-          className={
-            theme === "dark"
-              ? "rounded-2xl border border-white/10 bg-white/[0.03] p-3 sm:p-4"
-              : "rounded-2xl border border-slate-200 bg-white p-3 sm:p-4"
-          }
-        >
-          <h4 className={theme === "dark" ? "text-xs font-semibold uppercase tracking-[0.2em] text-cyan-200" : "text-xs font-semibold uppercase tracking-[0.2em] text-sky-700"}>
-            {section.heading}
-          </h4>
-          <div className={theme === "dark" ? "mt-2 whitespace-pre-wrap break-words text-sm leading-7 text-slate-100" : "mt-2 whitespace-pre-wrap break-words text-sm leading-7 text-slate-700"}>
-            {section.body}
-          </div>
-        </section>
-      ))}
+      {sections.map((section) => {
+        const meta = getSectionMeta(section.heading);
+        const Icon = meta.icon;
+        const bodyLines = splitSectionBody(section.body);
+
+        return (
+          <section
+            key={section.heading}
+            className={
+              theme === "dark"
+                ? "group relative overflow-hidden rounded-[1.5rem] border border-white/10 bg-slate-900/55 p-4 shadow-[0_20px_50px_rgba(2,6,23,0.22)] sm:p-5"
+                : "group relative overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white/95 p-4 shadow-[0_16px_36px_rgba(148,163,184,0.14)] sm:p-5"
+            }
+          >
+            <div
+              className={cn(
+                "pointer-events-none absolute inset-0 bg-gradient-to-br opacity-100",
+                meta.accent,
+              )}
+            />
+            <div className="relative space-y-4">
+              <div className="flex items-start gap-3">
+                <div
+                  className={
+                    theme === "dark"
+                      ? "flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-cyan-200"
+                      : "flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-slate-200 bg-white text-sky-700"
+                  }
+                >
+                  <Icon className="h-4 w-4" />
+                </div>
+                <div className="space-y-1">
+                  <p
+                    className={
+                      theme === "dark"
+                        ? "text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500"
+                        : "text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400"
+                    }
+                  >
+                    Mentor Section
+                  </p>
+                  <h4
+                    className={
+                      theme === "dark"
+                        ? "text-sm font-semibold uppercase tracking-[0.2em] text-cyan-200"
+                        : "text-sm font-semibold uppercase tracking-[0.2em] text-sky-700"
+                    }
+                  >
+                    {section.heading}
+                  </h4>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                {bodyLines.map((line, index) => (
+                  <p
+                    key={`${section.heading}-${index}`}
+                    className={
+                      theme === "dark"
+                        ? "break-words text-[15px] leading-8 text-slate-100"
+                        : "break-words text-[15px] leading-8 text-slate-700"
+                    }
+                  >
+                    {line.replace(/^\*\*(.*?)\*\*$/, "$1")}
+                  </p>
+                ))}
+              </div>
+            </div>
+          </section>
+        );
+      })}
     </div>
   );
 }
